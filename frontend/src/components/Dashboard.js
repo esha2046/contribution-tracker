@@ -2,16 +2,28 @@ import React, { useEffect, useState } from 'react';
 import { useWeb3 } from '../hooks/useWeb3';
 import { useContract } from '../hooks/useContract';
 import { CONTRIBUTION_TYPES } from '../utils/constants';
+import FileUpload from './FileUpload';
 import './Dashboard.css';
 
 export const Dashboard = () => {
   const { account, isConnected } = useWeb3();
-  const { getUserContributions, getLeaderboard, loading } = useContract();
+  const { getUserContributions, getLeaderboard, submitContribution, createProject, getAllProjects, loading } = useContract();
   const [contributions, setContributions] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
   const [userScore, setUserScore] = useState(0);
   const [userRank, setUserRank] = useState(0);
   const [contributionStats, setContributionStats] = useState({});
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [showSubmitForm, setShowSubmitForm] = useState(false);
+  const [formData, setFormData] = useState({
+    projectId: '',
+    description: '',
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState(null);
+  const [projects, setProjects] = useState([]);
+  const [showCreateProject, setShowCreateProject] = useState(false);
+  const [projectName, setProjectName] = useState('');
 
   useEffect(() => {
     if (!isConnected || !account) return;
@@ -44,13 +56,17 @@ export const Dashboard = () => {
         } catch (err) {
           console.error('Error fetching leaderboard:', err);
         }
+
+        // Get projects
+        const allProjects = await getAllProjects();
+        setProjects(allProjects);
       } catch (err) {
         console.error('Error fetching data:', err);
       }
     };
 
     fetchData();
-  }, [account, isConnected, getUserContributions, getLeaderboard]);
+  }, [account, isConnected, getUserContributions, getLeaderboard, getAllProjects]);
 
   if (!isConnected) {
     return (
@@ -62,6 +78,91 @@ export const Dashboard = () => {
       </div>
     );
   }
+
+  const handleFileUpload = (fileData) => {
+    setUploadedFile(fileData);
+    console.log('File uploaded:', fileData);
+  };
+
+  const handleSubmitContribution = async () => {
+    if (!uploadedFile || !formData.projectId || !formData.description) {
+      setSubmitMessage({ type: 'error', text: 'Please fill all fields and upload a file' });
+      return;
+    }
+
+    setSubmitting(true);
+    setSubmitMessage(null);
+
+    try {
+      // contribType defaults to 0 (can be adjusted based on your enum)
+      await submitContribution(
+        formData.projectId,
+        formData.description,
+        0, // contribType
+        uploadedFile.ipfsCID,
+        uploadedFile.fileHash
+      );
+
+      setSubmitMessage({
+        type: 'success',
+        text: 'Contribution submitted successfully!',
+      });
+
+      // Reset form
+      setUploadedFile(null);
+      setFormData({ projectId: '', description: '' });
+      setShowSubmitForm(false);
+
+      // Wait for transaction to be mined, then refresh contributions
+      setTimeout(async () => {
+        const userContribs = await getUserContributions(account);
+        setContributions(userContribs);
+      }, 2000);
+    } catch (error) {
+      setSubmitMessage({
+        type: 'error',
+        text: `Failed to submit: ${error.message}`,
+      });
+      console.error('Error submitting contribution:', error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCreateProject = async () => {
+    if (!projectName.trim()) {
+      setSubmitMessage({ type: 'error', text: 'Project name cannot be empty' });
+      return;
+    }
+
+    setSubmitting(true);
+    setSubmitMessage(null);
+
+    try {
+      await createProject(projectName, [account]);
+      setSubmitMessage({
+        type: 'success',
+        text: `Project "${projectName}" created successfully!`,
+      });
+
+      setProjectName('');
+      setShowCreateProject(false);
+
+      // Wait a moment for the transaction to be mined, then refresh
+      setTimeout(async () => {
+        const allProjects = await getAllProjects();
+        setProjects(allProjects);
+      }, 2000);
+    } catch (error) {
+      setSubmitMessage({
+        type: 'error',
+        text: `Failed to create project: ${error.message}`,
+      });
+      console.error('Error creating project:', error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="dashboard-container">
@@ -114,6 +215,143 @@ export const Dashboard = () => {
           </div>
         </div>
       )}
+
+      <div className="projects-section">
+        <div className="section-header">
+          <h2>Projects</h2>
+          <button
+            className="toggle-button"
+            onClick={() => setShowCreateProject(!showCreateProject)}
+          >
+            {showCreateProject ? '▼ Cancel' : '+ Create'}
+          </button>
+        </div>
+
+        {showCreateProject && (
+          <div className="create-project-form">
+            {submitMessage && (
+              <div className={`submit-message ${submitMessage.type}`}>
+                {submitMessage.text}
+              </div>
+            )}
+            <div className="form-group">
+              <label htmlFor="projectName">Project Name</label>
+              <input
+                id="projectName"
+                type="text"
+                placeholder="Enter project name..."
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                disabled={submitting}
+              />
+            </div>
+            <button
+              className="submit-button"
+              onClick={handleCreateProject}
+              disabled={submitting || !projectName.trim()}
+            >
+              {submitting ? 'Creating...' : 'Create Project'}
+            </button>
+          </div>
+        )}
+
+        {projects.length > 0 ? (
+          <div className="projects-list">
+            {projects.map((project) => (
+              <div key={project.id} className="project-card">
+                <div className="project-info">
+                  <h3>{project.name}</h3>
+                  <p className="project-id">ID: {project.id}</p>
+                </div>
+                <div className="project-status">
+                  {project.isActive ? (
+                    <span className="badge active">Active</span>
+                  ) : (
+                    <span className="badge inactive">Closed</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="empty-state">
+            <p>No projects yet. Create one to get started!</p>
+          </div>
+        )}
+      </div>
+
+      <div className="submit-contribution-section">
+        <div className="section-header">
+          <h2>Submit New Contribution</h2>
+          <button
+            className="toggle-button"
+            onClick={() => setShowSubmitForm(!showSubmitForm)}
+          >
+            {showSubmitForm ? '▼ Hide' : '▶ Show'}
+          </button>
+        </div>
+
+        {showSubmitForm && (
+          <div className="submit-form">
+            {submitMessage && (
+              <div className={`submit-message ${submitMessage.type}`}>
+                {submitMessage.text}
+              </div>
+            )}
+
+            <div className="form-group">
+              <label htmlFor="projectId">Project ID</label>
+              <input
+                id="projectId"
+                type="text"
+                placeholder="Enter project ID"
+                value={formData.projectId}
+                onChange={(e) =>
+                  setFormData({ ...formData, projectId: e.target.value })
+                }
+                disabled={submitting}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="description">Contribution Description</label>
+              <textarea
+                id="description"
+                placeholder="Describe your contribution..."
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+                disabled={submitting}
+                rows="3"
+              />
+            </div>
+
+            <FileUpload onFileUpload={handleFileUpload} disabled={submitting} />
+
+            {uploadedFile && (
+              <div className="upload-success">
+                <div className="success-icon">✓</div>
+                <p>
+                  <strong>File uploaded to IPFS!</strong>
+                </p>
+                <p className="ipfs-hash">CID: {uploadedFile.ipfsCID}</p>
+                <p className="file-hash">
+                  Hash: {uploadedFile.fileHash.substring(0, 20)}...
+                </p>
+
+                <button
+                  className="submit-button"
+                  onClick={handleSubmitContribution}
+                  disabled={submitting || !formData.projectId || !formData.description}
+                >
+                  {submitting ? 'Submitting...' : 'Submit to Smart Contract'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       <div className="contributions-section">
         <div className="section-header">

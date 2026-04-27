@@ -5,6 +5,33 @@ import { CONTRIBUTION_TRACKER_ABI } from '../utils/contractABI';
 
 export const Web3Context = createContext();
 
+const BASE_SEPOLIA_CHAIN_ID = '0x14a34'; // 84532 in hex
+
+const switchToBaseSepolia = async () => {
+  try {
+    await window.ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: BASE_SEPOLIA_CHAIN_ID }],
+    });
+  } catch (switchError) {
+    // Chain not added yet — add it
+    if (switchError.code === 4902) {
+      await window.ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [{
+          chainId: BASE_SEPOLIA_CHAIN_ID,
+          chainName: 'Base Sepolia',
+          rpcUrls: ['https://sepolia.base.org'],
+          nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+          blockExplorerUrls: ['https://sepolia.basescan.org'],
+        }],
+      });
+    } else {
+      throw switchError;
+    }
+  }
+};
+
 export const Web3Provider = ({ children }) => {
   const [account, setAccount] = useState(null);
   const [provider, setProvider] = useState(null);
@@ -14,10 +41,8 @@ export const Web3Provider = ({ children }) => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState(null);
 
-  // Check if MetaMask is installed
   const isMetaMaskInstalled = () => window.ethereum !== undefined;
 
-  // Connect wallet
   const connectWallet = useCallback(async () => {
     if (!isMetaMaskInstalled()) {
       setError('MetaMask is not installed');
@@ -32,6 +57,9 @@ export const Web3Provider = ({ children }) => {
         method: 'eth_requestAccounts',
       });
 
+      // Switch to Base Sepolia before doing anything else
+      await switchToBaseSepolia();
+
       const web3Provider = new ethers.BrowserProvider(window.ethereum);
       const web3Signer = await web3Provider.getSigner();
       const network = await web3Provider.getNetwork();
@@ -41,7 +69,6 @@ export const Web3Provider = ({ children }) => {
       setAccount(accounts[0]);
       setChainId(network.chainId);
 
-      // Initialize contract
       if (CONTRACT_ADDRESS && CONTRACT_ADDRESS !== '0x0000000000000000000000000000000000000000') {
         const contractInstance = new ethers.Contract(
           CONTRACT_ADDRESS,
@@ -58,7 +85,6 @@ export const Web3Provider = ({ children }) => {
     }
   }, []);
 
-  // Disconnect wallet
   const disconnectWallet = useCallback(() => {
     setAccount(null);
     setProvider(null);
@@ -68,7 +94,6 @@ export const Web3Provider = ({ children }) => {
     setError(null);
   }, []);
 
-  // Handle account changes
   useEffect(() => {
     if (!isMetaMaskInstalled()) return;
 
@@ -93,7 +118,6 @@ export const Web3Provider = ({ children }) => {
     };
   }, [disconnectWallet]);
 
-  // Check for previous connection
   useEffect(() => {
     const checkConnection = async () => {
       if (!isMetaMaskInstalled()) return;

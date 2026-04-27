@@ -53,7 +53,7 @@ export const useContract = () => {
               contribType: contrib.contribType,
               ipfsCID: contrib.ipfsCID,
               fileHash: contrib.fileHash,
-              timestamp: new Date(contrib.timestamp * 1000),
+              timestamp: new Date(Number(contrib.timestamp) * 1000),
               points: contrib.points.toString(),
               disputed: contrib.disputed,
             });
@@ -79,22 +79,33 @@ export const useContract = () => {
       setError(null);
       try {
         const count = await contract.contributionCount();
+        console.log('Total contributions in contract:', count.toString());
         const contributions = [];
+        
         for (let i = 1; i <= count; i++) {
-          const contrib = await contract.contributions(i);
-          if (contrib.contributor.toLowerCase() === userAddress.toLowerCase()) {
-            contributions.push({
-              id: contrib.id.toString(),
-              projectId: contrib.projectId.toString(),
-              contributor: contrib.contributor,
-              taskTitle: contrib.taskTitle,
-              contribType: contrib.contribType,
-              points: contrib.points.toString(),
-              timestamp: new Date(contrib.timestamp * 1000),
-              disputed: contrib.disputed,
-            });
+          try {
+            const contrib = await contract.contributions(i);
+            console.log(`Contribution ${i}:`, contrib);
+            
+            if (contrib.contributor.toLowerCase() === userAddress.toLowerCase()) {
+              contributions.push({
+                id: contrib.id.toString(),
+                projectId: contrib.projectId.toString(),
+                contributor: contrib.contributor,
+                taskTitle: contrib.taskTitle,
+                contribType: contrib.contribType,
+                ipfsCID: contrib.ipfsCID,
+                fileHash: contrib.fileHash,
+                points: contrib.points.toString(),
+                timestamp: new Date(Number(contrib.timestamp) * 1000),
+                disputed: contrib.disputed,
+              });
+            }
+          } catch (err) {
+            console.error(`Error fetching contribution ${i}:`, err);
           }
         }
+        console.log('User contributions found:', contributions.length);
         return contributions;
       } catch (err) {
         setError(err.message);

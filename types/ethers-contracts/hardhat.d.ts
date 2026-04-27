@@ -12,15 +12,19 @@ declare module "@nomicfoundation/hardhat-ethers/types" {
   interface HardhatEthersHelpers extends HardhatEthersHelpersBase {
   getContractFactory(name: 'ContributionTracker', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.ContributionTracker__factory>
 getContractFactory(name: 'Counter', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.Counter__factory>
+getContractFactory(name: 'CounterTest', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.CounterTest__factory>
 
   getContractAt(name: 'ContributionTracker', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.ContributionTracker>
 getContractAt(name: 'Counter', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.Counter>
+getContractAt(name: 'CounterTest', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.CounterTest>
 
   deployContract(name: 'ContributionTracker', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.ContributionTracker>
 deployContract(name: 'Counter', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.Counter>
+deployContract(name: 'CounterTest', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.CounterTest>
 
   deployContract(name: 'ContributionTracker', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.ContributionTracker>
 deployContract(name: 'Counter', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.Counter>
+deployContract(name: 'CounterTest', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.CounterTest>
 
     // default types
     getContractFactory(
