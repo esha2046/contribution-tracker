@@ -18,6 +18,7 @@ export const Dashboard = () => {
   const [formData, setFormData] = useState({
     projectId: '',
     description: '',
+    contribType: '0',
   });
   const [submitting, setSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState(null);
@@ -126,11 +127,10 @@ export const Dashboard = () => {
     setSubmitMessage(null);
 
     try {
-      // contribType defaults to 0 (can be adjusted based on your enum)
       await submitContribution(
         formData.projectId,
         formData.description,
-        0, // contribType
+        parseInt(formData.contribType),
         uploadedFile.ipfsCID,
         uploadedFile.fileHash
       );
@@ -142,7 +142,7 @@ export const Dashboard = () => {
 
       // Reset form
       setUploadedFile(null);
-      setFormData({ projectId: '', description: '' });
+      setFormData({ projectId: '', description: '', contribType: '0' });
       setShowSubmitForm(false);
 
       // Wait for transaction to be mined, then refresh contributions
@@ -357,6 +357,25 @@ export const Dashboard = () => {
                 disabled={submitting}
                 rows="3"
               />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="contribType">Contribution Type</label>
+              <select
+                id="contribType"
+                value={formData.contribType}
+                onChange={(e) =>
+                  setFormData({ ...formData, contribType: e.target.value })
+                }
+                disabled={submitting}
+              >
+                <option value="0">Code Review (5 pts)</option>
+                <option value="1">Bug Fix (4 pts)</option>
+                <option value="2">Feature Development (3 pts)</option>
+                <option value="3">Documentation (3 pts)</option>
+                <option value="4">Testing (2 pts)</option>
+                <option value="5">Design (2 pts)</option>
+              </select>
             </div>
 
             <FileUpload onFileUpload={handleFileUpload} disabled={submitting} />
