@@ -7,7 +7,7 @@ import './Dashboard.css';
 
 export const Dashboard = () => {
   const { account, isConnected } = useWeb3();
-  const { getUserContributions, getLeaderboard, submitContribution, createProject, getAllProjects, loading } = useContract();
+  const { getUserContributions, getLeaderboard, submitContribution, createProject, getAllProjects, getAllDisputes, raiseDispute, loading } = useContract();
   const [contributions, setContributions] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
   const [userScore, setUserScore] = useState(0);
@@ -24,6 +24,7 @@ export const Dashboard = () => {
   const [projects, setProjects] = useState([]);
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [projectName, setProjectName] = useState('');
+  const [disputes, setDisputes] = useState([]);
 
   useEffect(() => {
     if (!isConnected || !account) return;
@@ -60,13 +61,22 @@ export const Dashboard = () => {
         // Get projects
         const allProjects = await getAllProjects();
         setProjects(allProjects);
+
+        // Get disputes
+        try {
+          const allDisputes = await getAllDisputes();
+          console.log('Disputes fetched:', allDisputes);
+          setDisputes(allDisputes);
+        } catch (err) {
+          console.error('Error fetching disputes:', err);
+        }
       } catch (err) {
         console.error('Error fetching data:', err);
       }
     };
 
     fetchData();
-  }, [account, isConnected, getUserContributions, getLeaderboard, getAllProjects]);
+  }, [account, isConnected, getUserContributions, getLeaderboard, getAllProjects, getAllDisputes]);
 
   if (!isConnected) {
     return (
@@ -82,6 +92,28 @@ export const Dashboard = () => {
   const handleFileUpload = (fileData) => {
     setUploadedFile(fileData);
     console.log('File uploaded:', fileData);
+  };
+
+  const handleRaiseDispute = async (contributionId) => {
+    const reason = prompt('Enter reason for dispute:');
+    if (!reason) return;
+
+    try {
+      setSubmitting(true);
+      await raiseDispute(contributionId, reason);
+      setSubmitMessage({ type: 'success', text: 'Dispute raised successfully!' });
+      
+      // Refresh disputes after 2 seconds
+      setTimeout(async () => {
+        const allDisputes = await getAllDisputes();
+        setDisputes(allDisputes);
+      }, 2000);
+    } catch (err) {
+      setSubmitMessage({ type: 'error', text: 'Failed to raise dispute: ' + err.message });
+      console.error('Error raising dispute:', err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleSubmitContribution = async () => {
@@ -387,13 +419,53 @@ export const Dashboard = () => {
                 </div>
                 <div className="contrib-right">
                   <div className="points-badge">+{contrib.points}</div>
-                  {contrib.disputed && <div className="disputed-badge">Disputed</div>}
+                  {contrib.disputed ? (
+                    <div className="disputed-badge">Disputed</div>
+                  ) : (
+                    <button 
+                      className="dispute-btn"
+                      onClick={() => handleRaiseDispute(contrib.id)}
+                      disabled={submitting}
+                      title="Raise a dispute for this contribution"
+                    >
+                      Report
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {disputes.length > 0 && (
+        <div className="disputes-section">
+          <div className="section-header">
+            <h2>Active Disputes</h2>
+            <span className="count-badge">{disputes.filter(d => !d.resolved).length}</span>
+          </div>
+          <div className="disputes-list">
+            {disputes.map((dispute) => (
+              <div key={dispute.id} className={`dispute-card ${dispute.resolved ? 'resolved' : 'active'}`}>
+                <div className="dispute-header">
+                  <div className="dispute-id">Dispute #{dispute.id}</div>
+                  <div className={`dispute-status ${dispute.resolved ? 'resolved' : 'pending'}`}>
+                    {dispute.resolved ? '✓ Resolved' : '⚠️ Pending'}
+                  </div>
+                </div>
+                <div className="dispute-content">
+                  <p><strong>Contribution:</strong> {dispute.taskTitle}</p>
+                  <p><strong>Raised by:</strong> {`${dispute.raisedBy.substring(0, 10)}...`}</p>
+                  <p><strong>Reason:</strong> {dispute.reason}</p>
+                  {dispute.resolutionReason && (
+                    <p><strong>Resolution:</strong> {dispute.resolutionReason}</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {leaderboard.length > 0 && (
         <div className="leaderboard-preview">

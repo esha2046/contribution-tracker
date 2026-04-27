@@ -641,3 +641,118 @@
   color: #ef4444;
 }
 
+/* Disputes Section */
+.disputes-section {
+  background: white;
+  border-radius: 16px;
+  padding: 2.5rem;
+  margin-top: 3rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border);
+}
+
+.dispute-btn {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dispute-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.dispute-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.disputes-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.dispute-card {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #fbbf24;
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.dispute-card.resolved {
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  border-color: #86efac;
+}
+
+.dispute-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(251, 191, 36, 0.3);
+}
+
+.dispute-card.resolved:hover {
+  box-shadow: 0 8px 20px rgba(134, 239, 172, 0.3);
+}
+
+.dispute-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+  padding-bottom: 1rem;
+}
+
+.dispute-id {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #7c2d12;
+}
+
+.dispute-card.resolved .dispute-id {
+  color: #166534;
+}
+
+.dispute-status {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.dispute-status.pending {
+  color: #b45309;
+  background-color: rgba(180, 83, 9, 0.2);
+}
+
+.dispute-status.resolved {
+  color: #15803d;
+  background-color: rgba(21, 128, 61, 0.2);
+}
+
+.dispute-content {
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.dispute-content p {
+  margin: 0.5rem 0;
+}
+
+.dispute-content strong {
+  color: #7c2d12;
+}
+
+.dispute-card.resolved .dispute-content strong {
+  color: #166534;
+}
+

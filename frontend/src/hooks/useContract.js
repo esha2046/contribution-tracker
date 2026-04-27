@@ -120,7 +120,7 @@ export const useContract = () => {
 
   // Get leaderboard
   const getLeaderboard = useCallback(
-    async (projectId) => {
+    async (projectId = 1) => {
       if (!contract) return [];
       setLoading(true);
       setError(null);
@@ -191,6 +191,84 @@ export const useContract = () => {
     [contract]
   );
 
+  // Get all disputes
+  const getAllDisputes = useCallback(async () => {
+    if (!contract) return [];
+    setError(null);
+    try {
+      const count = await contract.disputeCount();
+      console.log('Total dispute count:', count.toString());
+      const disputesList = [];
+      for (let i = 0; i < Number(count); i++) {
+        try {
+          const dispute = await contract.disputes(i);
+          const contribution = await contract.contributions(dispute.contribId);
+          disputesList.push({
+            id: i.toString(),
+            contribId: dispute.contribId.toString(),
+            raisedBy: dispute.raisedBy,
+            reason: dispute.reason,
+            resolved: dispute.resolved,
+            resolutionReason: dispute.resolutionReason,
+            contributor: contribution.contributor,
+            taskTitle: contribution.taskTitle,
+            timestamp: new Date(Number(contribution.timestamp) * 1000),
+          });
+        } catch (err) {
+          console.error(`Error fetching dispute ${i}:`, err);
+        }
+      }
+      console.log('Disputes list:', disputesList);
+      return disputesList;
+    } catch (err) {
+      setError(err.message);
+      console.error('Error fetching disputes:', err);
+      return [];
+    }
+  }, [contract]);
+
+  // Raise a dispute
+  const raiseDispute = useCallback(
+    async (contributionId, reason) => {
+      if (!contract) throw new Error('Contract not initialized');
+      setLoading(true);
+      setError(null);
+      try {
+        const tx = await contract.raiseDispute(contributionId, reason);
+        await tx.wait();
+        return tx.hash;
+      } catch (err) {
+        setError(err.message);
+        console.error('Error raising dispute:', err);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [contract]
+  );
+
+  // Resolve a dispute
+  const resolveDispute = useCallback(
+    async (disputeId, keepContribution, reason) => {
+      if (!contract) throw new Error('Contract not initialized');
+      setLoading(true);
+      setError(null);
+      try {
+        const tx = await contract.resolveDispute(disputeId, keepContribution, reason);
+        await tx.wait();
+        return tx.hash;
+      } catch (err) {
+        setError(err.message);
+        console.error('Error resolving dispute:', err);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [contract]
+  );
+
   return {
     getAllProjects,
     getProjectContributions,
@@ -198,6 +276,9 @@ export const useContract = () => {
     getLeaderboard,
     submitContribution,
     createProject,
+    getAllDisputes,
+    raiseDispute,
+    resolveDispute,
     loading,
     error,
   };
