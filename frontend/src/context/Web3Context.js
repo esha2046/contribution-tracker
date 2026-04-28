@@ -97,11 +97,29 @@ export const Web3Provider = ({ children }) => {
   useEffect(() => {
     if (!isMetaMaskInstalled()) return;
 
-    const handleAccountsChanged = (accounts) => {
+    const handleAccountsChanged = async (accounts) => {
       if (accounts.length === 0) {
         disconnectWallet();
       } else {
         setAccount(accounts[0]);
+        
+        // Reinitialize contract with new signer for the new account
+        try {
+          const web3Provider = new ethers.BrowserProvider(window.ethereum);
+          const web3Signer = await web3Provider.getSigner();
+          setSigner(web3Signer);
+          
+          if (CONTRACT_ADDRESS && CONTRACT_ADDRESS !== '0x0000000000000000000000000000000000000000') {
+            const contractInstance = new ethers.Contract(
+              CONTRACT_ADDRESS,
+              CONTRIBUTION_TRACKER_ABI,
+              web3Signer
+            );
+            setContract(contractInstance);
+          }
+        } catch (err) {
+          console.error('Error reinitializing contract on account change:', err);
+        }
       }
     };
 

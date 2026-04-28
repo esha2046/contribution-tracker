@@ -95,6 +95,41 @@ contract ContributionTracker {
         emit ProjectCreated(projectId, name, msg.sender);
     }
 
+    function addMember(uint projectId, address newMember) public 
+        projectExists(projectId) 
+        onlyAdmin(projectId) 
+    {
+        require(newMember != address(0), "Invalid member address");
+        
+        // Check if member already exists
+        for (uint i = 0; i < projects[projectId].members.length; i++) {
+            require(projects[projectId].members[i] != newMember, "Member already exists");
+        }
+        
+        projects[projectId].members.push(newMember);
+    }
+
+    function removeMember(uint projectId, address member) public 
+        projectExists(projectId) 
+        onlyAdmin(projectId) 
+    {
+        require(member != address(0), "Invalid member address");
+        
+        uint index = projects[projectId].members.length;
+        for (uint i = 0; i < projects[projectId].members.length; i++) {
+            if (projects[projectId].members[i] == member) {
+                index = i;
+                break;
+            }
+        }
+        
+        require(index < projects[projectId].members.length, "Member not found");
+        
+        // Remove member by swapping with last element and popping
+        projects[projectId].members[index] = projects[projectId].members[projects[projectId].members.length - 1];
+        projects[projectId].members.pop();
+    }
+
     function submitContribution(
         uint projectId,
         string memory taskTitle,

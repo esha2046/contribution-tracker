@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useWeb3 } from '../hooks/useWeb3';
 import { useContract } from '../hooks/useContract';
+import { MemberManagement } from './MemberManagement';
 import './Projects.css';
 
 export const Projects = () => {
-  const { isConnected } = useWeb3();
+  const { isConnected, account } = useWeb3();
   const { getAllProjects, getLeaderboard, loading } = useContract();
   const [projects, setProjects] = useState([]);
   const [filteredProjects, setFilteredProjects] = useState([]);
@@ -13,6 +14,8 @@ export const Projects = () => {
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [showMemberModal, setShowMemberModal] = useState(false);
+  const [selectedProjectForMembers, setSelectedProjectForMembers] = useState(null);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -59,6 +62,17 @@ export const Projects = () => {
     } finally {
       setLoadingLeaderboard(false);
     }
+  };
+
+  const handleOpenMemberModal = (projectId, event) => {
+    event.stopPropagation();
+    setSelectedProjectForMembers(projectId);
+    setShowMemberModal(true);
+  };
+
+  const handleCloseMemberModal = () => {
+    setShowMemberModal(false);
+    setSelectedProjectForMembers(null);
   };
 
   const formatAddress = (addr) => `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`;
@@ -142,6 +156,15 @@ export const Projects = () => {
                     </div>
                   </div>
                   <div className="project-admin">👤 Admin: {formatAddress(project.admin)}</div>
+                  {account && account.toLowerCase() === project.admin.toLowerCase() && (
+                    <button
+                      className="manage-members-btn"
+                      onClick={(e) => handleOpenMemberModal(project.id, e)}
+                      title="Manage project members"
+                    >
+                      👥 Manage Members
+                    </button>
+                  )}
                   <div className="project-footer">
                     <span className="click-hint">Click to view leaderboard →</span>
                   </div>
@@ -150,6 +173,27 @@ export const Projects = () => {
             </div>
           )}
         </div>
+
+        {showMemberModal && selectedProjectForMembers !== null && (
+          <MemberManagement
+            projectId={selectedProjectForMembers}
+            projectAdmin={projects.find(p => p.id.toString() === selectedProjectForMembers.toString())?.admin}
+            onClose={handleCloseMemberModal}
+            onSuccess={() => {
+              // Refresh projects to show updated member list
+              const fetchProjects = async () => {
+                try {
+                  const proj = await getAllProjects();
+                  setProjects(proj);
+                  setFilteredProjects(proj);
+                } catch (err) {
+                  console.error('Error refreshing projects:', err);
+                }
+              };
+              fetchProjects();
+            }}
+          />
+        )}
 
         <div className="leaderboard-section">
           <div className="leaderboard-header">

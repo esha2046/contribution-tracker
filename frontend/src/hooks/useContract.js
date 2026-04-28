@@ -191,6 +191,48 @@ export const useContract = () => {
     [contract]
   );
 
+  // Add member to project
+  const addMember = useCallback(
+    async (projectId, memberAddress) => {
+      if (!contract) throw new Error('Contract not initialized');
+      setLoading(true);
+      setError(null);
+      try {
+        const tx = await contract.addMember(projectId, memberAddress);
+        await tx.wait();
+        return tx.hash;
+      } catch (err) {
+        setError(err.message);
+        console.error('Error adding member:', err);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [contract]
+  );
+
+  // Remove member from project
+  const removeMember = useCallback(
+    async (projectId, memberAddress) => {
+      if (!contract) throw new Error('Contract not initialized');
+      setLoading(true);
+      setError(null);
+      try {
+        const tx = await contract.removeMember(projectId, memberAddress);
+        await tx.wait();
+        return tx.hash;
+      } catch (err) {
+        setError(err.message);
+        console.error('Error removing member:', err);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [contract]
+  );
+
   // Get all disputes
   const getAllDisputes = useCallback(async () => {
     if (!contract) return [];
@@ -276,6 +318,8 @@ export const useContract = () => {
     getLeaderboard,
     submitContribution,
     createProject,
+    addMember,
+    removeMember,
     getAllDisputes,
     raiseDispute,
     resolveDispute,

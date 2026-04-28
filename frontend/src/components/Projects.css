@@ -196,6 +196,26 @@
   margin-bottom: 1rem;
 }
 
+.manage-members-btn {
+  background: #6366f1;
+  color: white;
+  border: none;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 1rem;
+  display: inline-block;
+}
+
+.manage-members-btn:hover {
+  background: #4f46e5;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
 .project-footer {
   display: flex;
   justify-content: flex-end;
